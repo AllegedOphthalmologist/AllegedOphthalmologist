@@ -5,6 +5,12 @@ var mui = require('material-ui');
 var ThemeManager = require('material-ui/lib/styles/theme-manager')();
 var ThemeManager = new mui.Styles.ThemeManager();
 
+
+//dialog boxes
+var ModalI = require('./energyBreakDownView.jsx');
+var DialogWindow = require('./dialogWindow.jsx');
+var Registration = require('./RegistrationView.jsx');
+
 // Actions
 var ViewActions = require('./../actions/ViewActions');
 
@@ -57,7 +63,7 @@ var MainView = React.createClass({
           <ModalI>Launch Modal</ModalI>   
         </div>   
 
-        <LineGraphView />     
+          <LineGraphView />     
 
       </div>
       
@@ -67,7 +73,6 @@ var MainView = React.createClass({
 
 
 
-module.exports = MainView;
 
-/*{this.state.data}*/
-/*{this.state.data.energy_state}*/
+module.exports = MainView;
+        
