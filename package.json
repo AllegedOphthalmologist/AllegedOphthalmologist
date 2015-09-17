@@ -60,7 +60,6 @@
     "webpack-dev-server": "^1.10.1"
   },
   "devDependencies": {
-    "grunt-concurrent": "^2.0.3",
     "grunt-jasmine-node-new": "^0.3.2",
     "grunt-karma": "^0.12.1",
     "jasmine-core": "^2.2.0",
@@ -68,11 +67,13 @@
     "karma-chrome-launcher": "^0.2.0",
     "karma-cli": "^0.1.0",
     "karma-jasmine": "^0.3.5",
+    "karma-phantomjs-launcher": "^0.2.1",
+    "karma-phantomjs-shim": "^1.1.1",
     "karma-spec-reporter": "0.0.20",
     "karma-webpack": "^1.6.0",
+    "phantomjs": "^1.9.18",
     "rewire": "^2.3.1",
     "rewire-webpack": "^1.0.0",
-    "supertest": "^1.1.0",
-    "webpack": "^1.5.3"
+    "supertest": "^1.1.0"
   }
 }
