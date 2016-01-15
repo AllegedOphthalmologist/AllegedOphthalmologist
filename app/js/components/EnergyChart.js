@@ -14,9 +14,31 @@ var GraphTypes = require('../constants/Constants.js').GraphTypes;
   --DEPRECATED---------------
   overlay:  String  - Optional - Name of state data that you want to overlay on top of
   =====================================================================
-
-  Call graph function to utilize
 */
+// CONSTANTS ===========================================================================================
+var CONST = {
+  GRAPH_RANGE :                     5,    // Number of days we display for Graph
+
+  Y_MIN_RATIO :                  0.95,    // Ratio we apply to y to give padding to bottom of graph
+  Y_MAX_RATIO :                  1.02,    // Ratio we apply to y to give padding to top of graph
+  Y_SCALE_RATIO :                0.65,    // Ratio between global max Y and local max Y to see if we need to scale the Y Axis
+
+  HEADER_OFFSET :                  10,    // Padding between the graph margin and top of graph element
+  FOOTER_OFFSET :                  25,    // Padding between the graph margin and bottom of graph element
+  AXIS_OFFSET :                    40,    // Padding between the graph margin and sides of graph element
+  MARGIN:                          10,    // Default margin around graph element
+  BAR_WIDTH:                        2,    // Default width of Time Bar
+
+  TRANSITION_DURATION :           750,    // Duration of d3 transitions in milliseconds
+  TOOLTIP_RIGHT_LIMIT :          0.88,    // Ratio of graph before we adjust tooltip left 
+  TOOLTIP_TOP_LIMIT :             0.1,    // Ratio of graph before we adjust tooltip down
+  BUTTON_OPACITY :               0.35,    // Opacity of visible graph button
+  ONE_DAY :             24*60*60*1000,    // Milliseconds in one day
+};
+//======================================================================================================
+
+
+//  Call graph function to utilize
 var graph = function(el, props, state) {
   /*
   == Options Object ==================================================
@@ -55,14 +77,14 @@ var initGraph = function(el, props, state) {
     case GraphTypes.MAIN:
       data = options.data = utils.parseWattData(state, false);
       options.unit = "lbs/Mwh";
-      options.range = 5;
+      options.range = CONST.GRAPH_RANGE;
       options.tasks = [drawLine, drawAxis, drawMiscData, drawAxisScale, drawCapturePad];
       break;
 
     case GraphTypes.USER_CARBON:
       data = options.data = utils.parseUserCarbonData(state);
       options.unit = 'lbs';
-      options.range = 10;
+      options.range = CONST.GRAPH_RANGE;
       options.tasks = [drawLine, drawAxis, drawAxisScale, drawCapturePad];
       break;
 
@@ -70,14 +92,14 @@ var initGraph = function(el, props, state) {
       data = options.data = utils.parseUserKwhData(state);
       options.data2 = utils.parseWattData(state, false);
       options.unit = 'Kwh';
-      options.range = 5;
+      options.range = CONST.GRAPH_RANGE;
       options.tasks = [drawDangerZone, drawLine, drawAxis, drawAxisScale, drawCapturePad];
       break;
 
     // Supplemental Graph Types
     case GraphTypes.USER_REQUIRE:
       data = options.data = utils.parseWattData(state);
-      options.range = 5;
+      options.range = CONST.GRAPH_RANGE;
       options.tasks = [drawAxis, drawAxisScale, drawDisablePad];
       break;
 
@@ -89,18 +111,18 @@ var initGraph = function(el, props, state) {
   var scale = options.scale = {
     height: parseInt(props.height, 10),
     width: parseInt(props.width, 10),
-    margin: props.margin ? parseInt(props.margin, 10) : 10,
-    barWidth: parseFloat(props.barWidth) || 2,
-    headerOffset: 10,
-    footerOffset: 25,
-    axisOffset: 40, 
-    yMinRatio: 0.95,
-    yMaxRatio: 1.02,
+    margin: props.margin ? parseInt(props.margin, 10) : CONST.MARGIN,
+    barWidth: parseFloat(props.barWidth) || CONST.BAR_WIDTH,
+    headerOffset: CONST.HEADER_OFFSET,
+    footerOffset: CONST.FOOTER_OFFSET,
+    axisOffset: CONST.AXIS_OFFSET, 
+    yMinRatio: CONST.Y_MIN_RATIO,
+    yMaxRatio: CONST.Y_MAX_RATIO,
     orient: options.overlay ? 'right' : 'left',
   };
 
   // Set up the initial date range
-  var filterDate = new Date(data[data.length - 1].time - (24 * 60 * 60 * 1000) * options.range);
+  var filterDate = new Date(data[data.length - 1].time - CONST.ONE_DAY * options.range);
   var filterIndex = utils.bisectDateIndex(data, filterDate);
   scale.range = [data[filterIndex].time, data[data.length - 1].time];
 
@@ -174,8 +196,8 @@ var drawAxis = function(options) {
   var localMax = d3.max(localData, function(datum) { return datum.point * scale.yMaxRatio; });
   var localMin = d3.min(localData, function(datum) { return datum.point * scale.yMinRatio; });
   options.scale.yRange.domain([
-    (scale.yMin / localMin < 0.65) ? scale.yMin * 0.65 : scale.yMin, 
-    (localMax / scale.yMax < 0.65) ? scale.yMax * 0.65 : scale.yMax
+    (scale.yMin / localMin < CONST.Y_SCALE_RATIO) ? scale.yMin * CONST.Y_SCALE_RATIO : scale.yMin, 
+    (localMax / scale.yMax < CONST.Y_SCALE_RATIO) ? scale.yMax * CONST.Y_SCALE_RATIO : scale.yMax
   ]).nice();
 
   // Do it the D3 Way /////////////////////////////////////////////
@@ -197,8 +219,8 @@ var drawAxis = function(options) {
   .attr('transform', utils.translate(scale.axisOffset, scale.height - scale.footerOffset));
 
   // UPDATE + ENTER
-  graphYAxis.transition().duration(750).call(scale.yAxis);
-  graphXAxis.transition().duration(750).call(scale.xAxis);
+  graphYAxis.transition().duration(CONST.TRANSITION_DURATION).call(scale.yAxis);
+  graphXAxis.transition().duration(CONST.TRANSITION_DURATION).call(scale.xAxis);
 
   // EXIT
   graphYAxis.exit().remove();
@@ -225,7 +247,7 @@ var drawLine = function(options) {
   // UPDATE + ENTER //
   linePath
   .attr('transform', utils.translate(scale.axisOffset, scale.headerOffset))
-  .transition().duration(750)
+  .transition().duration(CONST.TRANSITION_DURATION)
   .attr('d', scale.line(data));
 
   // EXIT //
@@ -305,7 +327,7 @@ var drawTimeBar = function(options) {
   // UPDATE + ENTER
   timeBar
   .attr('transform', utils.translate(scale.axisOffset, scale.headerOffset))
-  .transition().duration(750)
+  .transition().duration(CONST.TRANSITION_DURATION)
   .attr('y', 0)
   .attr('x', function(datum) {
     return datum.x;
@@ -337,7 +359,7 @@ var drawTimeBarTitle = function(options, timeBar, x) {
   // UPDATE + ENTER //
   title
   .attr('transform', utils.translate(scale.axisOffset, scale.headerOffset))
-  .transition().duration(750)
+  .transition().duration(CONST.TRANSITION_DURATION)
   .attr('x', x - 2);
 
   // EXIT //
@@ -375,7 +397,7 @@ var drawPredictPoint = function(options) {
   // UPDATE + ENTER
   predictPoint
   .attr('transform', utils.translate(scale.axisOffset, scale.headerOffset))
-  .transition().duration(750)
+  .transition().duration(CONST.TRANSITION_DURATION)
   .attr('cx', function(datum) {
     return datum.time;
   })
@@ -431,6 +453,8 @@ var drawDangerZone = function(options) {
   .attr('width', function(datum) {
     return scale.xRange(datum[1]) - scale.xRange(datum[0]);
   })
+  // We add this dash array that is designed to have dashes on the left and right sides of the block with blanks
+  // for the top and bottom
   .attr('stroke-dasharray', function(datum) {
     var width = scale.xRange(datum[1]) - scale.xRange(datum[0]);
     var height = scale.height - scale.headerOffset - scale.footerOffset;
@@ -440,7 +464,7 @@ var drawDangerZone = function(options) {
 
   // UPDATE & ENTER
   zoneRects
-  .transition().duration(750)
+  .transition().duration(CONST.TRANSITION_DURATION)
   .attr('x', function(datum) {
     return scale.xRange(datum[0]);
   });
@@ -456,9 +480,6 @@ var drawFocus = function(options) {
   var data = options.data;
 
   var halfHeight = (scale.height - scale.headerOffset - scale.footerOffset) / 2;
-  // var graphHeight = scale.height - scale.headerOffset - scale.footerOffset;
-  // var graphWidth = scale.width - scale.axisOffset - scale.axisOffset;
-  // var buttonRadius = graphWidth / graphHeight * 2; 
 
   // Draw the focus/////////////////////////////////////////////////////////
   var focus = graph.append('svg:g')
@@ -510,7 +531,7 @@ var drawFocus = function(options) {
    // Left Button//////////////////////////
   var leftButton = focus.append('svg:g')
   .attr('class', 'graphButton left')
-  .attr('opacity', scale.range[0] > data[0].time ? 0.35 : 0);
+  .attr('opacity', scale.range[0] > data[0].time ? CONST.BUTTON_OPACITY : 0);
 
   leftButton.append('svg:circle')
   .attr('class', 'graphCircle')
@@ -527,7 +548,7 @@ var drawFocus = function(options) {
   // Right Button///////////////////////////////
   var rightButton = focus.append('svg:g')
   .attr('class', 'graphButton right')
-  .attr('opacity', scale.range[1] < data[data.length - 1].time ? 0.35 : 0);
+  .attr('opacity', scale.range[1] < data[data.length - 1].time ? CONST.BUTTON_OPACITY : 0);
 
   rightButton.append('svg:circle')
   .attr('class', 'graphCircle')
@@ -643,8 +664,8 @@ var surfaceMove = function(options, mouse, focus) {
   var y = update.y = scale.yRange(nearestDatum.point);
 
   // Calculate dx and dy based on how far along the graph we are. This is for moving the tooltip around 
-  update.textAnchor = (x / (scale.width - scale.axisOffset - scale.axisOffset)) < 0.88 ? 'start' : 'end';
-  update.dy = (y / (scale.height - scale.headerOffset - scale.footerOffset)) < 0.1 ? ['4rem', '2rem'] : ['-3rem', '-1rem'];
+  update.textAnchor = (x / (scale.width - scale.axisOffset - scale.axisOffset)) < CONST.TOOLTIP_RIGHT_LIMIT ? 'start' : 'end';
+  update.dy = (y / (scale.height - scale.headerOffset - scale.footerOffset)) < CONST.TOOLTIP_TOP_LIMIT ? ['4rem', '2rem'] : ['-3rem', '-1rem'];
 
   /*
   update = {
@@ -668,23 +689,22 @@ var surfaceClick = function(options, mouse, focus) {
   // Calculate the new Domain
   var left;
   var right;
-  var oneDay = 24 * 60 * 60 * 1000;
 
   if (mouse[0] < (scale.width - scale.axisOffset - scale.axisOffset) / 2) {
-    left = new Date(scale.range[0].getTime() - oneDay);
-    right = new Date(scale.range[1].getTime() - oneDay);
+    left = new Date(scale.range[0].getTime() - CONST.ONE_DAY);
+    right = new Date(scale.range[1].getTime() - CONST.ONE_DAY);
 
-    // If we keep going left but hit end before oneDay
+    // If we keep going left but hit end before CONST.ONE_DAY
     var rightOffset = scale.range[0] - data[0].time;
     var residualRight = new Date(scale.range[1].getTime() - rightOffset);
 
     scale.range = left >= data[0].time ? [left, right] : [data[0].time, residualRight];
   }
   else {
-    left = new Date(scale.range[0].getTime() + oneDay);
-    right = new Date(scale.range[1].getTime() + oneDay);
+    left = new Date(scale.range[0].getTime() + CONST.ONE_DAY);
+    right = new Date(scale.range[1].getTime() + CONST.ONE_DAY);
 
-    // If we keep going right but hit end before oneDay
+    // If we keep going right but hit end before CONST.ONE_DAY
     var leftOffset = data[data.length - 1].time - scale.range[1];
     var residualLeft = new Date(scale.range[0].getTime() + leftOffset);
 
@@ -706,9 +726,9 @@ var surfaceClick = function(options, mouse, focus) {
 
   // Update the Buttons
   focus.select('.graphButton.left')
-  .transition().duration(750)
-  .attr('opacity', scale.range[0] > data[0].time ? 0.35 : 0);
+  .transition().duration(CONST.TRANSITION_DURATION)
+  .attr('opacity', scale.range[0] > data[0].time ? CONST.BUTTON_OPACITY : 0);
   focus.select('.graphButton.right')
-  .transition().duration(750)
-  .attr('opacity', scale.range[1] < data[data.length - 1].time ? 0.35 : 0);
+  .transition().duration(CONST.TRANSITION_DURATION)
+  .attr('opacity', scale.range[1] < data[data.length - 1].time ? CONST.BUTTON_OPACITY : 0);
 };
